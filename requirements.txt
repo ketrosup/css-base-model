@@ -1,0 +1,20 @@
+# Python 3.12 (tested with 3.12.10)
+#
+# PyTorch: the line below installs the CPU build from PyPI on Windows.
+# For an NVIDIA GPU (the results in this repo were trained on CUDA 12.8), install torch first:
+#   pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cu128
+torch==2.11.0
+torchvision==0.26.0
+
+numpy==2.5.3
+pandas==3.0.6
+matplotlib==3.11.2
+seaborn==0.13.2
+pillow==12.3.0
+scikit-learn==1.9.1
+
+# Jupyter kernel (VS Code / Jupyter)
+ipykernel==7.3.0
+
+# Only needed for the older TensorFlow notebook (defect_detection_cnn.ipynb)
+tensorflow==2.21.0

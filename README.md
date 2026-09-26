@@ -1,235 +1,129 @@
-# CNN-Based Visual Defect Detection
-## Manufacturing Quality Control - Casting Products
+# CNN-Based Visual Defect Detection — Casting Products
 
-Complete implementation of automated visual inspection system using deep learning.
+Automated visual inspection of submersible-pump impeller castings: classify each top-down image as **OK** or **Defective**.
 
----
-
-## Files Overview
-
-### **Notebooks** (Choose One)
-
-- **`defect_detection_pytorch.ipynb`** ✅ **RECOMMENDED**
-  - Uses PyTorch (compatible with Python 3.14+)
-  - ResNet50 transfer learning architecture
-  - All dependencies already installed
-  - Run this notebook if you have Python 3.14
-
-- **`defect_detection_cnn.ipynb`** (TensorFlow version)
-  - Requires TensorFlow (needs Python 3.9-3.12)
-  - MobileNetV2 transfer learning architecture
-  - Alternative if you install Python 3.11 or 3.12
-
-### **Documentation**
-
-- **`MODEL_COMPARISON_REPORT.md`**
-  - Detailed analysis of both models
-  - Business context and deployment strategies
-  - Performance metrics and comparisons
-  - Key lessons and insights
+**Business goal:** minimise **false negatives** (defective parts shipped to customers) while keeping **false positives** (good parts sent for manual re-check) low. Recall on the *Defective* class is therefore the headline metric.
 
 ---
 
-## Quick Start
+## Results (held-out test set, 715 images)
 
-### Prerequisites
-✅ Python 3.14 (already installed)  
-✅ PyTorch (already installed)  
+Every model is scored on the same test split. The "tuned" threshold is picked on the **validation set only**: it's the threshold with the highest precision that still reaches **≥ 99.5 % recall**.
 
-### Run the PyTorch Notebook
+| Model | Params | Threshold | Accuracy | Precision | Recall | F1 | Missed defects (FN) | False alarms (FP) |
+|---|---|---|---|---|---|---|---|---|
+| Baseline CNN | 1.29 M | 0.50 | 0.9944 | 1.0000 | 0.9912 | 0.9956 | 4 | 0 |
+| Baseline CNN | | tuned 0.58 | 0.9930 | 1.0000 | 0.9890 | 0.9945 | 5 | 0 |
+| **Cand A: Regularised CNN** ✅ | 2.35 M | 0.50 | 0.9986 | 1.0000 | 0.9978 | 0.9989 | 1 | 0 |
+| **Cand A: Regularised CNN** ✅ | | tuned 0.20 | 0.9986 | 1.0000 | 0.9978 | 0.9989 | **1** | **0** |
+| Cand B: ResNet18 (transfer learning) | 11.18 M | 0.50 | 0.9972 | 1.0000 | 0.9956 | 0.9978 | 2 | 0 |
+| Cand B: ResNet18 (transfer learning) | | tuned 0.31 | 0.9986 | 1.0000 | 0.9978 | 0.9989 | 1 | 0 |
 
-1. **Open the notebook** in your IDE/Jupyter:
-   ```bash
-   jupyter notebook defect_detection_pytorch.ipynb
-   ```
+**Selected model: Candidate A (regularised CNN from scratch).** It ranked highest on validation ROC-AUC. On the test set it misses 1 of 453 defects and raises no false alarms. It ties ResNet18 at the tuned threshold with ~5× fewer parameters.
 
-2. **Run all cells** - The notebook includes:
-   - Data loading and exploration
-   - Phase 1: Baseline CNN implementation
-   - Phase 2: Improved model with transfer learning
-   - Detailed comparisons and visualizations
+**Inference latency (single image):**
 
-3. **Review results** - Each section outputs:
-   - Accuracy, Precision, Recall, F1-Score
-   - Confusion matrices
-   - Performance visualizations
-   - Key insights
+| Model | CPU ms/image | GPU ms/image (RTX 4050 Laptop) |
+|---|---|---|
+| Baseline CNN | 3.5 | 2.3 |
+| Cand A: Regularised CNN | 21.6 | 4.4 |
+| Cand B: ResNet18 | 19.4 | 4.6 |
 
----
+All three models are fast enough for real-time line-side inspection. The full numbers are in [results.json](results.json) and the plots are in [figures/](figures/).
 
-## Project Structure
-
-### Phase 1: Baseline CNN Classifier
-- **Architecture**: 3-layer CNN with progressive filters (32→64→128)
-- **Purpose**: Establish baseline performance and identify limitations
-- **Output**: Baseline metrics for comparison
-
-### Phase 2: Improved Model with Transfer Learning
-- **Architecture**: ResNet50 pre-trained on ImageNet + custom top layers
-- **Justification**: 
-  - Pre-trained features capture general visual patterns
-  - Better generalization with less training data
-  - Faster convergence and improved recall (critical for defect detection)
-- **Training Strategy**:
-  - Phase 2a: Train custom layers (frozen base)
-  - Phase 2b: Fine-tune base model layers
-- **Output**: Improved metrics with significant gains in recall
+![Test-set confusion matrices](figures/cm_all.png)
 
 ---
 
-## Key Metrics Explained
+## What was done
 
-| Metric | Importance | Formula |
-|--------|-----------|---------|
-| **Accuracy** | Overall correctness | (TP + TN) / Total |
-| **Precision** | False alarm rate | TP / (TP + FP) |
-| **Recall** | **CRITICAL** - Defect catch rate | TP / (TP + FN) |
-| **F1-Score** | Balance of precision & recall | 2 × (P × R) / (P + R) |
+The main notebook is **[defect_detection_pytorch.ipynb](defect_detection_pytorch.ipynb)**.
 
-### Why Recall Matters Most
-- **False Negative (FN)**: Defect escapes to customer → warranty claim + reputation damage
-- **False Positive (FP)**: Good product flagged → manual review (minor cost)
-- **Therefore**: Maximize recall, accept moderate false positives
+1. **Data.** The dataset uses the `casting_data/` version: 300×300 grayscale images with an official train/test split (6,633 train / 715 test, ~57 % defective). 15 % of `train/` is split off, stratified, as a validation set (995 images). That validation set drives early stopping, model selection and threshold tuning. The test set is only touched for the final evaluation.
+2. **Phase 1: Baseline CNN.** 4 × [Conv → ReLU → MaxPool] at 128×128 with no augmentation or batch-norm. This is the reference point. Diagnosis: it overfits, and at 128 px the small pinholes become only a few pixels wide.
+3. **Phase 2: Two improvement candidates**, trained with the same loss, splits, early-stopping rule and metrics:
+   - **A. Regularised scratch CNN:** 224 px input, double-conv blocks with BatchNorm, a global-average-pooling head, weight decay and GPU augmentation. The augmentation uses rotations and flips (the impeller is rotationally symmetric), small affine zoom/shift, and brightness/contrast jitter.
+   - **B. ResNet18 transfer learning:** ImageNet weights, full fine-tune with discriminative learning rates (backbone 3e-4, head 3e-3), one-cycle schedule and the same augmentation.
+4. **Threshold tuning.** The recall-first operating point (≥ 99.5 % recall) is chosen on validation.
+5. **Deployment checks.** The notebook measures CPU/GPU latency, shows the remaining errors, and runs Grad-CAM to check the model is looking at the defect rather than background artefacts.
+6. **Outputs.** The notebook saves `best_model_cnn.pt` (Candidate A weights), `results.json` and `figures/*.png`.
 
----
-
-## Dataset Info
-
-**Source**: Kaggle - Casting Product Image Data  
-**Link**: https://www.kaggle.com/datasets/ravirajsingh45/real-life-industrial-dataset-of-casting-product  
-**Size**: 512×512 RGB images  
-**Classes**: 
-- Defective (1): Casting impellers with defects
-- OK (0): Good quality castings
-
-**Expected Usage**:
-- ~1000 images (500 per class)
-- Train: 70%, Validation: 15%, Test: 15%
+The TensorFlow notebook **[defect_detection_cnn.ipynb](defect_detection_cnn.ipynb)** is an earlier version. It uses a baseline CNN plus MobileNetV2 transfer learning on 1,000 images from `casting_512x512/`. It's kept for reference, and the results above come from the PyTorch notebook.
 
 ---
 
-## Results Summary
+## Repository layout
 
-| Model | Accuracy | Precision | Recall | F1 |
-|-------|----------|-----------|--------|-----|
-| Baseline CNN | [Metric] | [Metric] | [Metric] | [Metric] |
-| Improved (ResNet50) | [Metric] | [Metric] | [Metric] | [Metric] |
-
-*Metrics will be populated when you run the notebook*
-
----
-
-## Deployment Recommendations
-
-### Production Integration
-
-```python
-# Example inference code
-model = torch.load('best_model.pt')
-model.eval()
-
-image = load_and_preprocess_image('product.jpg')
-probability = model(image)[0].item()
-
-if probability > 0.7:      # High confidence defect
-    reject_product()
-elif probability > 0.3:    # Uncertain - manual review
-    flag_for_inspection()
-else:                       # High confidence OK
-    pass_product()
+```text
+├── defect_detection_pytorch.ipynb   # main notebook (PyTorch) — produces all results
+├── defect_detection_cnn.ipynb       # earlier TensorFlow/Keras version
+├── best_model_cnn.pt                # trained weights of the selected model (Cand A, state_dict)
+├── results.json                     # metrics, thresholds, latency, epochs
+├── figures/                         # saved plots (samples, curves, confusion matrices, ROC, Grad-CAM)
+├── archive/                         # dataset (Kaggle casting product images)
+│   ├── casting_data/casting_data/{train,test}/{ok_front,def_front}/
+│   └── casting_512x512/casting_512x512/{ok_front,def_front}/
+├── MODEL_COMPARISON_REPORT.md       # written report / reflection
+├── reflective-question.pdf          # assignment brief
+└── requirements.txt
 ```
 
-### Confidence Thresholds
+---
 
-- **>0.7**: Automatically reject (reduce false negatives)
-- **0.3-0.7**: Manual inspection (safety margin)
-- **<0.3**: Pass to customer (reduce false positives)
+## How to run
 
-### Monitoring Strategy
+**Prerequisites:** Python 3.12, and ideally an NVIDIA GPU. The notebook also runs on CPU, but training is much slower.
 
-Track over time:
-- Daily true positive rate (defects caught)
-- Daily false positive rate (unnecessary rejections)
-- Model drift indicators
-- Retraining triggers
+```powershell
+# 1. Clone
+git clone https://github.com/ketrosup/css-base-model.git
+cd css-base-model
+
+# 2. Create and activate a virtual environment
+python -m venv .venv
+.venv\Scripts\activate            # macOS/Linux: source .venv/bin/activate
+
+# 3. (GPU only) install CUDA-enabled PyTorch first
+pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cu128
+
+# 4. Install the rest
+pip install -r requirements.txt
+```
+
+Then:
+
+- Open `defect_detection_pytorch.ipynb` in VS Code, select the `.venv` kernel, and click **Run All**. To use the browser instead, run `pip install notebook` and then `jupyter notebook`.
+- The notebook regenerates `figures/`, `results.json` and `best_model_cnn.pt`. Seeds are fixed (`SEED = 42`), but GPU nondeterminism can shift results slightly.
+
+**Dataset:** it's already included under `archive/`. If it's missing, download it from [Kaggle — Casting product image data](https://www.kaggle.com/datasets/ravirajsingh45/real-life-industrial-dataset-of-casting-product) and unzip it into `archive/`. The notebook also finds the dataset automatically at the standard Kaggle (`/kaggle/input/...`) and Colab (`/content/...`) paths.
+
+### Using the saved model
+
+```python
+import torch
+# Define/import the ImprovedCNN class from the notebook first (section 3.3)
+model = ImprovedCNN()
+model.load_state_dict(torch.load("best_model_cnn.pt", map_location="cpu"))
+model.eval()
+
+# x: (1, 1, 224, 224) grayscale tensor in [0,1], normalised with the train mean/std (PIX_MEAN, PIX_STD from the notebook)
+p_defect = torch.sigmoid(model((x - PIX_MEAN) / PIX_STD)).item()
+is_defective = p_defect >= 0.2035   # validation-tuned, recall-first threshold (results.json)
+```
 
 ---
 
-## Troubleshooting
+## Caveats
 
-### "ModuleNotFoundError: No module named 'torch'"
-✅ PyTorch is already installed. Restart your Jupyter kernel.
-
-### "ModuleNotFoundError: No module named 'tensorflow'"
-→ This is expected. Use the PyTorch notebook instead.
-→ Or install Python 3.11 and use TensorFlow notebook.
-
-### Notebook runs slowly
-→ This is normal on CPU. Consider using GPU if available.
-→ Reduce dataset size in data loading cells for faster testing.
-
-### CUDA not available (GPU)
-→ Model will automatically use CPU. This is fine for inference.
-→ PyTorch handles CPU/GPU transparently.
-
----
-
-## Key Learning Points
-
-### Technical Insights
-1. **CNNs** effectively detect visual defects through hierarchical feature learning
-2. **Transfer Learning** accelerates training and improves generalization
-3. **Data Augmentation** (rotation, shifts, flips) prevents overfitting
-4. **Regularization** (dropout, batch norm) essential for deep networks
-5. **Fine-tuning** with lower learning rates adapts pre-trained models
-
-### Business Context
-1. **Automation Value**: 
-   - Replaces slow, inconsistent manual inspection
-   - Provides 24/7 consistent quality checks
-   - Scales to multiple production lines
-   
-2. **Quality Impact**:
-   - Catches defects before reaching customers
-   - Reduces warranty claims and reputation damage
-   - Enables data-driven quality decisions
-
-3. **Continuous Improvement**:
-   - Log predictions and corrections
-   - Quarterly retraining with new data
-   - Monitor for model drift over time
-
----
-
-## Next Steps
-
-1. ✅ **Review** reflective-question.pdf for full requirements
-2. ✅ **Run** defect_detection_pytorch.ipynb to execute models
-3. ✅ **Analyze** MODEL_COMPARISON_REPORT.md for insights
-4. 📊 **Visualize** confusion matrices and metric comparisons
-5. 🎯 **Document** your findings and reflections
+- The test set is small (453 defective images), so a 1-error difference is ~0.2 pp of recall. Candidates A and B are effectively tied.
+- The `casting_data` images were augmented by the dataset author, so near-duplicates may exist across the train and test splits. Real production data will likely be harder, so re-validate on fresh line images before deployment.
+- Monitor recall and false-positive rate in production, and retrain when defect types or lighting drift.
 
 ---
 
 ## References
 
-- PyTorch: https://pytorch.org/
-- ResNet50: https://arxiv.org/abs/1512.03385
-- Transfer Learning: https://cs231n.github.io/transfer-learning/
-- Dataset: https://www.kaggle.com/datasets/ravirajsingh45/real-life-industrial-dataset-of-casting-product
-
----
-
-## Support
-
-For issues or questions:
-- Check the notebook comments and cell outputs
-- Review MODEL_COMPARISON_REPORT.md for detailed explanations
-- Refer to PyTorch documentation: https://pytorch.org/docs
-
----
-
-**Status**: ✅ Ready to Run  
-**Last Updated**: 2026-09-21  
-**Python Version**: 3.14+  
-**Framework**: PyTorch 2.14+
+- Dataset: <https://www.kaggle.com/datasets/ravirajsingh45/real-life-industrial-dataset-of-casting-product>
+- ResNet: <https://arxiv.org/abs/1512.03385>
+- Grad-CAM: <https://arxiv.org/abs/1610.02391>
+- PyTorch: <https://pytorch.org/>
