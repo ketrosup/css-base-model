@@ -1,0 +1,143 @@
+{
+  "selected_model": "Cand A: Regularised CNN",
+  "recall_target": 0.995,
+  "thresholds": {
+    "Baseline CNN": 0.5802925825119019,
+    "Cand A: Regularised CNN": 0.20354916155338287,
+    "Cand B: ResNet18 TL": 0.314050555229187
+  },
+  "test": {
+    "Baseline CNN | thr=0.50": {
+      "threshold": 0.5,
+      "accuracy": 0.9944055944055944,
+      "precision": 1.0,
+      "recall": 0.9911699779249448,
+      "f1": 0.9955654101995566,
+      "roc_auc": 1.0,
+      "TN": 262,
+      "FP": 0,
+      "FN": 4,
+      "TP": 449
+    },
+    "Baseline CNN | tuned": {
+      "threshold": 0.5802925825119019,
+      "accuracy": 0.993006993006993,
+      "precision": 1.0,
+      "recall": 0.9889624724061811,
+      "f1": 0.9944506104328524,
+      "roc_auc": 1.0,
+      "TN": 262,
+      "FP": 0,
+      "FN": 5,
+      "TP": 448
+    },
+    "Cand A: Regularised CNN | thr=0.50": {
+      "threshold": 0.5,
+      "accuracy": 0.9986013986013986,
+      "precision": 1.0,
+      "recall": 0.9977924944812362,
+      "f1": 0.9988950276243094,
+      "roc_auc": 0.9999831488128338,
+      "TN": 262,
+      "FP": 0,
+      "FN": 1,
+      "TP": 452
+    },
+    "Cand A: Regularised CNN | tuned": {
+      "threshold": 0.20354916155338287,
+      "accuracy": 0.9986013986013986,
+      "precision": 1.0,
+      "recall": 0.9977924944812362,
+      "f1": 0.9988950276243094,
+      "roc_auc": 0.9999831488128338,
+      "TN": 262,
+      "FP": 0,
+      "FN": 1,
+      "TP": 452
+    },
+    "Cand B: ResNet18 TL | thr=0.50": {
+      "threshold": 0.5,
+      "accuracy": 0.9972027972027973,
+      "precision": 1.0,
+      "recall": 0.9955849889624724,
+      "f1": 0.9977876106194691,
+      "roc_auc": 0.999991574406417,
+      "TN": 262,
+      "FP": 0,
+      "FN": 2,
+      "TP": 451
+    },
+    "Cand B: ResNet18 TL | tuned": {
+      "threshold": 0.314050555229187,
+      "accuracy": 0.9986013986013986,
+      "precision": 1.0,
+      "recall": 0.9977924944812362,
+      "f1": 0.9988950276243094,
+      "roc_auc": 0.999991574406417,
+      "TN": 262,
+      "FP": 0,
+      "FN": 1,
+      "TP": 452
+    }
+  },
+  "validation@0.5": {
+    "Baseline CNN": {
+      "threshold": 0.5,
+      "accuracy": 0.9989949748743718,
+      "precision": 1.0,
+      "recall": 0.99822695035461,
+      "f1": 0.9991126885536823,
+      "roc_auc": 0.9999876585871551,
+      "TN": 431.0,
+      "FP": 0.0,
+      "FN": 1.0,
+      "TP": 563.0
+    },
+    "Cand A: Regularised CNN": {
+      "threshold": 0.5,
+      "accuracy": 0.9979899497487437,
+      "precision": 1.0,
+      "recall": 0.9964539007092199,
+      "f1": 0.9982238010657194,
+      "roc_auc": 1.0,
+      "TN": 431.0,
+      "FP": 0.0,
+      "FN": 2.0,
+      "TP": 562.0
+    },
+    "Cand B: ResNet18 TL": {
+      "threshold": 0.5,
+      "accuracy": 0.9969849246231156,
+      "precision": 1.0,
+      "recall": 0.9946808510638298,
+      "f1": 0.9973333333333333,
+      "roc_auc": 0.9999670895657469,
+      "TN": 431.0,
+      "FP": 0.0,
+      "FN": 3.0,
+      "TP": 561.0
+    }
+  },
+  "latency": {
+    "Baseline CNN": {
+      "params (M)": 1.29,
+      "CPU ms/image": 3.52,
+      "GPU ms/image": 2.33
+    },
+    "Cand A: Regularised CNN": {
+      "params (M)": 2.35,
+      "CPU ms/image": 21.56,
+      "GPU ms/image": 4.39
+    },
+    "Cand B: ResNet18 TL": {
+      "params (M)": 11.18,
+      "CPU ms/image": 19.36,
+      "GPU ms/image": 4.61
+    }
+  },
+  "epochs_trained": {
+    "Baseline CNN": 20,
+    "Cand A": 25,
+    "Cand B": 11
+  }
+}
