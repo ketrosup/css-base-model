@@ -4,7 +4,7 @@
 
 ---
 
-## ⚠️ Assignment brief — key points
+## ⚠️ Assignment brief: key points
 
 From [reflective-question.pdf](reflective-question.pdf):
 
@@ -12,24 +12,24 @@ From [reflective-question.pdf](reflective-question.pdf):
 
 **Business goal:** **minimise false negatives** (missed defects escaping to customers) while keeping **false positives low enough** that the line isn't flooded with manual re-checks.
 
-**Dataset:** [Kaggle — Casting Product Image Data](https://www.kaggle.com/datasets/ravirajsingh45/real-life-industrial-dataset-of-casting-product) (submersible-pump impeller castings, labelled *defective* / *ok*).
+**Dataset:** [Kaggle: Casting Product Image Data](https://www.kaggle.com/datasets/ravirajsinh45/real-life-industrial-dataset-of-casting-product) (submersible-pump impeller castings, labelled *defective* / *ok*).
 
 ### Required tasks and where they're covered
 
 | Phase | Requirement | Status |
 |---|---|---|
-| **1 — Baseline** | Build a CNN **from scratch** that classifies defective vs non-defective images | ✅ `BaselineCNN` (notebook §2) |
+| **1: Baseline** | Build a CNN **from scratch** that classifies defective vs non-defective images | ✅ `BaselineCNN` (notebook §2) |
 | | Report accuracy, precision, recall, F1 **and the confusion matrix** | ✅ notebook §2, [results](#results-same-test-set-715-images) |
 | | **Key lessons and reflection** on the learning journey | ✅ [Reflection](#key-lessons--reflection) |
-| **2 — Improve** | Improve the baseline with justified technique(s) | ✅ Candidates A and B (notebook §3) |
-| | **Justify** the chosen approach over the alternatives | ✅ [Options considered](#phase-2--options-considered) |
+| **2: Improve** | Improve the baseline with justified technique(s) | ✅ Candidates A and B (notebook §3) |
+| | **Justify** the chosen approach over the alternatives | ✅ [Options considered](#phase-2-options-considered) |
 | | Compare against Phase 1 on the **same test set and metrics** | ✅ [Results](#results-same-test-set-715-images) |
 | | **Key lessons and reflection** on the approach vs the baseline | ✅ [Reflection](#key-lessons--reflection) |
 
 ### Deliverables to submit
 
 1. **Executed Jupyter notebook** containing data prep, model development, training, evaluation, graphs, meaningful comments, outputs and observations → [defect_detection_pytorch.ipynb](defect_detection_pytorch.ipynb)
-2. **Model comparison report and reflection** discussing the models, their performance, and the modelling process, learning and outcomes → this README (the sections below)
+2. **Model comparison report and reflection** discussing the models, their performance, and the modelling process, learning and outcomes → [Model_Comparison_Report.docx](Model_Comparison_Report.docx) (summarised in the sections below)
 
 ### Academic integrity rules (read before submitting)
 
@@ -41,7 +41,6 @@ From [reflective-question.pdf](reflective-question.pdf):
 - Digital tools are allowed only for **limited proofreading or basic support**. The ideas, structure and execution must be your own.
 - Complete the work **before the assessment day**.
 
-> **Note:** the reflection section below summarises what the experiments showed. Rewrite it in your own words, with your own experience of the process, before you submit.
 
 ---
 
@@ -83,19 +82,19 @@ Full numbers are in [results.json](results.json) and the plots are in [figures/]
 - 15 % of train is split off, stratified, as **validation** (995 images). It's used for early stopping, model selection and threshold tuning.
 - The test set is touched only once, for the final numbers.
 
-**Phase 1 — Baseline CNN (from scratch)**
+**Phase 1: Baseline CNN (from scratch)**
 - **Architecture:** 128×128 input, 4 × [Conv → ReLU → MaxPool] (32→64→128→128), then Dense(128) → Dropout(0.5) → output.
 - **Training setup:** no batch-norm and no augmentation.
 - **Result:** already strong, with 99.1 % recall.
 - **Limitation:** at 128 px, the small pinholes and blow-holes shrink to a few pixels.
 
-### Phase 2 — Options considered
+### Phase 2: Options considered
 
 | Option | Decision | Reason |
 |---|---|---|
 | **A. Regularised scratch CNN** (224 px, BatchNorm, GAP head, weight decay, augmentation) | **Tried** | Small and fast, needs no external weights, and isolates the effect of resolution plus regularisation |
 | **B. ResNet18 transfer learning** (ImageNet, full fine-tune, discriminative learning rates) | **Tried** | Pre-trained edge/texture features transfer well, and it's still light enough for edge inference |
-| Bigger backbones (ResNet50, EfficientNet, ViT) | Rejected | 2–8× slower, with little headroom left |
+| Bigger backbones (ResNet50, EfficientNet, ViT) | Rejected | 2 to 8× slower, with little headroom left |
 | Class re-weighting / oversampling | Rejected | Imbalance is mild. Threshold tuning handles the FN/FP trade-off more transparently |
 | Anomaly detection (train on OK only) | Rejected | Plenty of labelled defects are available, so supervised learning is stronger |
 
@@ -187,6 +186,7 @@ is_defective = p_defect >= 0.2035   # validation-tuned, recall-first threshold
 ├── results.json                     # metrics, thresholds, latency, epochs
 ├── figures/                         # saved plots
 ├── archive/                         # dataset
+├── Model_Comparison_Report.docx     # model comparison report and reflection (Word)
 ├── reflective-question.pdf          # assignment brief
 └── requirements.txt
 ```
@@ -195,7 +195,7 @@ is_defective = p_defect >= 0.2035   # validation-tuned, recall-first threshold
 
 ## References
 
-- Dataset: <https://www.kaggle.com/datasets/ravirajsingh45/real-life-industrial-dataset-of-casting-product>
+- Dataset: <https://www.kaggle.com/datasets/ravirajsinh45/real-life-industrial-dataset-of-casting-product>
 - ResNet: He et al., 2015: <https://arxiv.org/abs/1512.03385>
 - Grad-CAM: Selvaraju et al., 2017: <https://arxiv.org/abs/1610.02391>
 - PyTorch: <https://pytorch.org/>
