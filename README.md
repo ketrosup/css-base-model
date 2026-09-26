@@ -45,7 +45,7 @@ The main notebook is **[defect_detection_pytorch.ipynb](defect_detection_pytorch
    - **A. Regularised scratch CNN:** 224 px input, double-conv blocks with BatchNorm, a global-average-pooling head, weight decay and GPU augmentation. The augmentation uses rotations and flips (the impeller is rotationally symmetric), small affine zoom/shift, and brightness/contrast jitter.
    - **B. ResNet18 transfer learning:** ImageNet weights, full fine-tune with discriminative learning rates (backbone 3e-4, head 3e-3), one-cycle schedule and the same augmentation.
 4. **Threshold tuning.** The recall-first operating point (≥ 99.5 % recall) is chosen on validation.
-5. **Deployment checks.** The notebook measures CPU/GPU latency, shows the remaining errors, and runs Grad-CAM to check the model is looking at the defect rather than background artefacts.
+5. **Deployment checks.** The notebook measures CPU/GPU latency, and shows the remaining errors. A Grad-CAM check (`figures/gradcam.png`, from an earlier run) confirms the model looks at the defect rather than at background artefacts; that code cell still needs restoring in the notebook.
 6. **Outputs.** The notebook saves `best_model_cnn.pt` (Candidate A weights), `results.json` and `figures/*.png`.
 
 The TensorFlow notebook **[defect_detection_cnn.ipynb](defect_detection_cnn.ipynb)** is an earlier version. It uses a baseline CNN plus MobileNetV2 transfer learning on 1,000 images from `casting_512x512/`. It's kept for reference, and the results above come from the PyTorch notebook.
